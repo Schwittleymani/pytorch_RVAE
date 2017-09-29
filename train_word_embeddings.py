@@ -9,8 +9,7 @@ from utils.batch_loader import BatchLoader
 from utils.parameters import Parameters
 from selfModules.neg import NEG_loss
 
-if __name__ == '__main__':
-
+def run(argument_list = None):
     parser = argparse.ArgumentParser(description='word2vec')
     parser.add_argument('--num-iterations', type=int, default=1000000, metavar='NI',
                         help='num iterations (default: 1000000)')
@@ -20,7 +19,12 @@ if __name__ == '__main__':
                         help='num sample (default: 5)')
     parser.add_argument('--use-cuda', type=bool, default=True, metavar='CUDA',
                         help='use cuda (default: True)')
-    args = parser.parse_args()
+
+    if argument_list:
+        args = parser.parse_args(argument_list)
+    else:
+        args = parser.parse_args()
+
 
     batch_loader = BatchLoader('')
     params = Parameters(batch_loader.max_word_len,
@@ -56,3 +60,7 @@ if __name__ == '__main__':
 
     word_embeddings = neg_loss.input_embeddings()
     np.save('data/word_embeddings.npy', word_embeddings)
+
+if __name__ == '__main__':
+    run()
+

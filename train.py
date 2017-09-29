@@ -4,12 +4,24 @@ import os
 import numpy as np
 import torch as t
 from torch.optim import Adam
+import codecs
 
 from utils.batch_loader import BatchLoader
 from utils.parameters import Parameters
 from model.rvae import RVAE
+import json
 
-if __name__ == "__main__":
+def store_samples(iteration, samples):
+    with codecs.open('data/samples-'str(iteration)+'.txt','w',encoding='utf-8') as fout:
+        fout.write(samples)
+
+def store_stats(stats):
+    state_file = 'data/stats.json'
+    mode = 'a' if os.path.exists(state_file) else 'w'
+    with open(state_file, mode) as fout:
+        fout.write(json.dumps(stats))    
+
+def run(argument_list = None):
 
     if not os.path.exists('data/word_embeddings.npy'):
         raise FileNotFoundError("word embeddings file was't found")
@@ -32,7 +44,10 @@ if __name__ == "__main__":
     parser.add_argument('--kld-result', default='', metavar='KLD',
                         help='ce result path (default: '')')
 
-    args = parser.parse_args()
+    if argument_list:
+        args = parser.parse_args(argument_list)
+    else:
+        args = parser.parse_args()
 
     batch_loader = BatchLoader('')
     parameters = Parameters(batch_loader.max_word_len,
@@ -59,17 +74,25 @@ if __name__ == "__main__":
         cross_entropy, kld, coef = train_step(iteration, args.batch_size, args.use_cuda, args.dropout)
 
         if iteration % 5 == 0:
-            print('\n')
-            print('------------TRAIN-------------')
-            print('----------ITERATION-----------')
-            print(iteration)
-            print('--------CROSS-ENTROPY---------')
-            print(cross_entropy.data.cpu().numpy()[0])
-            print('-------------KLD--------------')
-            print(kld.data.cpu().numpy()[0])
-            print('-----------KLD-coef-----------')
-            print(coef)
-            print('------------------------------')
+            # print('\n')
+            # print('------------TRAIN-------------')
+            # print('----------ITERATION-----------')
+            # print(iteration)
+            # print('--------CROSS-ENTROPY---------')
+            cross_entropy_data_cpu = cross_entropy.data.cpu().numpy()[0]
+            # print(cross_entropy_data_cpu)
+            # print('-------------KLD--------------')
+            # print(kld.data.cpu().numpy()[0])
+            # print('-----------KLD-coef-----------')
+            # print(coef)
+            # print('------------------------------')
+            stats = {
+                "it":iteration,
+                "cedc":cross_entropy_data_cpu,
+                "kld":kld.data.cpu().numpy()[0],
+                "coef":kld.data.cpu().numpy()[0]
+            }
+            store_stats(stats)
 
         if iteration % 10 == 0:
             cross_entropy, kld = validate(args.batch_size, args.use_cuda)
@@ -77,13 +100,19 @@ if __name__ == "__main__":
             cross_entropy = cross_entropy.data.cpu().numpy()[0]
             kld = kld.data.cpu().numpy()[0]
 
-            print('\n')
-            print('------------VALID-------------')
-            print('--------CROSS-ENTROPY---------')
-            print(cross_entropy)
-            print('-------------KLD--------------')
-            print(kld)
-            print('------------------------------')
+            # print('\n')
+            # print('------------VALID-------------')
+            # print('--------CROSS-ENTROPY---------')
+            # print(cross_entropy)
+            # print('-------------KLD--------------')
+            # print(kld)
+            # print('------------------------------')
+            stats = {
+                "it":iteration,
+                "ce":cross_entropy,
+                "kld":kld
+            }
+            store_stats(stats)
 
             ce_result += [cross_entropy]
             kld_result += [kld]
@@ -93,13 +122,20 @@ if __name__ == "__main__":
 
             sample = rvae.sample(batch_loader, 50, seed, args.use_cuda)
 
-            print('\n')
-            print('------------SAMPLE------------')
-            print('------------------------------')
-            print(sample)
-            print('------------------------------')
+            # print('\n')
+            # print('------------SAMPLE------------')
+            # print('------------------------------')
+            # print(sample)
+            store_samples(iteration,sample)
+            # print('------------------------------')
+        if iteration % 100 = 0:
+            print(iteration)
+
 
     t.save(rvae.state_dict(), 'trained_RVAE')
 
     np.save('ce_result_{}.npy'.format(args.ce_result), np.array(ce_result))
     np.save('kld_result_npy_{}'.format(args.kld_result), np.array(kld_result))
+
+if __name__ == "__main__":
+    run()
