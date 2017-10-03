@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
+
 import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 
-from utils.functional import parameters_allocation_check
+from pytorch_RVAE.utils.functional import parameters_allocation_check
 
 
 class Decoder(nn.Module):

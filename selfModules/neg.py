@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
+
 import torch as t
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.nn import Parameter
 
-from utils.functional import *
-
+from pytorch_RVAE.utils.functional import *
 
 class NEG_loss(nn.Module):
     def __init__(self, num_classes, embed_size):

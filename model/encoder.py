@@ -2,8 +2,8 @@ import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 
-from selfModules.highway import Highway
-from utils.functional import parameters_allocation_check
+from pytorch_RVAE.selfModules.highway import Highway
+from pytorch_RVAE.utils.functional import parameters_allocation_check
 
 
 class Encoder(nn.Module):

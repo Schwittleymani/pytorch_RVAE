@@ -6,62 +6,40 @@ import torch as t
 from torch.optim import Adam
 import codecs
 
-from utils.batch_loader import BatchLoader
-from utils.parameters import Parameters
-from model.rvae import RVAE
 import json
 
+from pytorch_RVAE.utils.batch_loader import BatchLoader
+from pytorch_RVAE.utils.parameters import Parameters
+from pytorch_RVAE.model.rvae import RVAE
+
 def store_samples(iteration, samples):
-    with codecs.open('data/samples-'str(iteration)+'.txt','w',encoding='utf-8') as fout:
-        fout.write(samples)
+    with codecs.open(unicode('pytorch_RVAE/data/samples-' + str(iteration)+'.txt', 'utf-8'),'w',encoding='utf-8') as fout:
+        fout.write(unicode(samples, 'utf-8'))
 
 def store_stats(stats):
-    state_file = 'data/stats.json'
+    state_file = 'pytorch_RVAE/data/stats.json'
     mode = 'a' if os.path.exists(state_file) else 'w'
     with open(state_file, mode) as fout:
-        fout.write(json.dumps(stats))    
+        print(stats)
+        print(type(stats))
+        json.dump(stats, fout)
+        #fout.write(json.dumps(stats))
 
 def run(argument_list = None):
 
-    if not os.path.exists('data/word_embeddings.npy'):
+    if not os.path.exists('pytorch_RVAE/data/word_embeddings.npy'):
         raise FileNotFoundError("word embeddings file was't found")
 
-    parser = argparse.ArgumentParser(description='RVAE')
-    parser.add_argument('--num-iterations', type=int, default=120000, metavar='NI',
-                        help='num iterations (default: 120000)')
-    parser.add_argument('--batch-size', type=int, default=32, metavar='BS',
-                        help='batch size (default: 32)')
-    parser.add_argument('--use-cuda', type=bool, default=True, metavar='CUDA',
-                        help='use cuda (default: True)')
-    parser.add_argument('--learning-rate', type=float, default=0.00005, metavar='LR',
-                        help='learning rate (default: 0.00005)')
-    parser.add_argument('--dropout', type=float, default=0.3, metavar='DR',
-                        help='dropout (default: 0.3)')
-    parser.add_argument('--use-trained', type=bool, default=False, metavar='UT',
-                        help='load pretrained model (default: False)')
-    parser.add_argument('--ce-result', default='', metavar='CE',
-                        help='ce result path (default: '')')
-    parser.add_argument('--kld-result', default='', metavar='KLD',
-                        help='ce result path (default: '')')
-
-    if argument_list:
-        args = parser.parse_args(argument_list)
-    else:
-        args = parser.parse_args()
-
-    batch_loader = BatchLoader('')
+    batch_loader = BatchLoader('pytorch_RVAE/')
     parameters = Parameters(batch_loader.max_word_len,
                             batch_loader.max_seq_len,
                             batch_loader.words_vocab_size,
                             batch_loader.chars_vocab_size)
 
     rvae = RVAE(parameters)
-    if args.use_trained:
-        rvae.load_state_dict(t.load('trained_RVAE'))
-    if args.use_cuda:
-        rvae = rvae.cuda()
+    rvae = rvae.cuda()
 
-    optimizer = Adam(rvae.learnable_parameters(), args.learning_rate)
+    optimizer = Adam(rvae.learnable_parameters(), 0.00005)
 
     train_step = rvae.trainer(optimizer, batch_loader)
     validate = rvae.validater(batch_loader)
@@ -69,9 +47,10 @@ def run(argument_list = None):
     ce_result = []
     kld_result = []
 
-    for iteration in range(args.num_iterations):
+    iters = 500  # 1000000
+    for iteration in range(iters):
 
-        cross_entropy, kld, coef = train_step(iteration, args.batch_size, args.use_cuda, args.dropout)
+        cross_entropy, kld, coef = train_step(iteration, 32, True, 0.3)
 
         if iteration % 5 == 0:
             # print('\n')
@@ -87,15 +66,15 @@ def run(argument_list = None):
             # print(coef)
             # print('------------------------------')
             stats = {
-                "it":iteration,
-                "cedc":cross_entropy_data_cpu,
-                "kld":kld.data.cpu().numpy()[0],
-                "coef":kld.data.cpu().numpy()[0]
+                "it": float(iteration),
+                "cedc": float(cross_entropy_data_cpu),
+                "kld": float(kld.data.cpu().numpy()[0]),
+                "coef": float(kld.data.cpu().numpy()[0])
             }
             store_stats(stats)
 
         if iteration % 10 == 0:
-            cross_entropy, kld = validate(args.batch_size, args.use_cuda)
+            cross_entropy, kld = validate(32, True)
 
             cross_entropy = cross_entropy.data.cpu().numpy()[0]
             kld = kld.data.cpu().numpy()[0]
@@ -108,9 +87,9 @@ def run(argument_list = None):
             # print(kld)
             # print('------------------------------')
             stats = {
-                "it":iteration,
-                "ce":cross_entropy,
-                "kld":kld
+                "it": float(iteration),
+                "ce": float(cross_entropy),
+                "kld": float(kld)
             }
             store_stats(stats)
 
@@ -120,22 +99,22 @@ def run(argument_list = None):
         if iteration % 20 == 0:
             seed = np.random.normal(size=[1, parameters.latent_variable_size])
 
-            sample = rvae.sample(batch_loader, 50, seed, args.use_cuda)
+            sample = rvae.sample(batch_loader, 50, seed, True)
 
             # print('\n')
             # print('------------SAMPLE------------')
             # print('------------------------------')
             # print(sample)
-            store_samples(iteration,sample)
+            store_samples(iteration, sample)
             # print('------------------------------')
-        if iteration % 100 = 0:
+        if iteration % 100 == 0:
             print(iteration)
 
 
     t.save(rvae.state_dict(), 'trained_RVAE')
 
-    np.save('ce_result_{}.npy'.format(args.ce_result), np.array(ce_result))
-    np.save('kld_result_npy_{}'.format(args.kld_result), np.array(kld_result))
+    np.save('ce_result_{}.npy'.format(''), np.array(ce_result))
+    np.save('kld_result_npy_{}'.format(''), np.array(kld_result))
 
 if __name__ == "__main__":
     run()

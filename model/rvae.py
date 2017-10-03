@@ -7,10 +7,10 @@ from torch.autograd import Variable
 from .decoder import Decoder
 from .encoder import Encoder
 
-from selfModules.embedding import Embedding
-
-from utils.functional import kld_coef, parameters_allocation_check, fold
-
+from pytorch_RVAE.selfModules.embedding import Embedding
+from pytorch_RVAE.utils.functional import parameters_allocation_check
+from pytorch_RVAE.utils.functional import fold
+from pytorch_RVAE.utils.functional import kld_coef
 
 class RVAE(nn.Module):
     def __init__(self, params):
