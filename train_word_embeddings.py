@@ -20,9 +20,11 @@ if __name__ == '__main__':
                         help='num sample (default: 5)')
     parser.add_argument('--use-cuda', type=bool, default=True, metavar='CUDA',
                         help='use cuda (default: True)')
+    parser.add_argument('--author', default='', metavar='Author',
+                        help='which author(folder) to use')
     args = parser.parse_args()
 
-    batch_loader = BatchLoader('')
+    batch_loader = BatchLoader(args.author)
     params = Parameters(batch_loader.max_word_len,
                         batch_loader.max_seq_len,
                         batch_loader.words_vocab_size,
@@ -34,6 +36,8 @@ if __name__ == '__main__':
 
     # NEG_loss is defined over two embedding matrixes with shape of [params.word_vocab_size, params.word_embed_size]
     optimizer = SGD(neg_loss.parameters(), 0.1)
+
+    file = open('train_word_embeddings_'+args.author+'.log', 'w')
 
     for iteration in range(args.num_iterations):
 
@@ -53,6 +57,11 @@ if __name__ == '__main__':
         if iteration % 500 == 0:
             out = out.cpu().data.numpy()[0]
             print('iteration = {}, loss = {}'.format(iteration, out))
+            file.write('iteration = {}, loss = {}'.format(iteration, out))
+            file.write('\n')
+            file.flush()
 
     word_embeddings = neg_loss.input_embeddings()
-    np.save('data/word_embeddings.npy', word_embeddings)
+    np.save(args.author + '/word_embeddings.npy', word_embeddings)
+    file.flush
+    file.close()
