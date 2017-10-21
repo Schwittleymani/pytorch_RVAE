@@ -4,12 +4,24 @@ import os
 import numpy as np
 import torch as t
 from torch.optim import Adam
+import codecs
 
 from utils.batch_loader import BatchLoader
 from utils.parameters import Parameters
 from model.rvae import RVAE
+import json
 
-if __name__ == "__main__":
+def store_samples(iteration, samples):
+    with codecs.open('data/samples-'str(iteration)+'.txt','w',encoding='utf-8') as fout:
+        fout.write(samples)
+
+def store_stats(stats):
+    state_file = 'data/stats.json'
+    mode = 'a' if os.path.exists(state_file) else 'w'
+    with open(state_file, mode) as fout:
+        fout.write(json.dumps(stats))    
+
+def run(argument_list = None):
 
     parser = argparse.ArgumentParser(description='RVAE')
     parser.add_argument('--num-iterations', type=int, default=120000, metavar='NI',
@@ -30,7 +42,11 @@ if __name__ == "__main__":
                         help='ce result path (default: '')')
     parser.add_argument('--author', default='', metavar='Author',
                         help='which author(folder) to use')
-    args = parser.parse_args()
+
+    if argument_list:
+        args = parser.parse_args(argument_list)
+    else:
+        args = parser.parse_args()
 
     if not os.path.exists(args.author + '/word_embeddings.npy'):
         raise FileNotFoundError("word embeddings file was't found")
@@ -118,3 +134,6 @@ if __name__ == "__main__":
 
     np.save('ce_result_{}.npy'.format(args.ce_result), np.array(ce_result))
     np.save('kld_result_npy_{}'.format(args.kld_result), np.array(kld_result))
+
+if __name__ == "__main__":
+    run()
